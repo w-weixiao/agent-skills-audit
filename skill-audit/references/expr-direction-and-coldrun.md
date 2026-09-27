@@ -10,7 +10,7 @@
 
 ②**分档**：
 - 红线句（18+/自愿/拒绝/胁迫/未成年等安全底线，或用户明令"配方锁定/无例外"的硬配置）保留禁令原样。
-- 成人技能（名以 `adult-` 开头，或属于 chengren-game / ydh-xiyou / novel-pipeline / adult-outline-design / adult-novel-sourcing / outline-lore-retrieval）→ 整项跳过，其余 8 项照跑。
+- 成人技能（名以 `adult-` 开头，或 frontmatter/正文登记为 18+ 内容技能，或属于用户维护的成人向技能清单）→ 整项跳过，其余 8 项照跑。
 
 ③**转写**：非红线禁令句逐条改"做 X，因为 Y"，改完该句不再含否定禁令词。
 例：「别用 curl 抓加密站」→「加密站用 browser_exec 渲染取 innerText，因为 curl 只拿 JS 壳」。

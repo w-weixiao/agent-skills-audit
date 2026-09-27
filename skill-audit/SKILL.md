@@ -1,10 +1,8 @@
 ---
-name: skill-audit
-description: "技能库审计SOP：模型按 9 检查项检测全库技能出决策表，否定禁令转正向。触发：建改删技能、全库治理、审计决策表、技能库瘦身、死链检测。负面触发：新建某技能（走 skill-authoring-guide）、单技能冷跑（归编写侧）。"
-version: 1.0.0
-license: MIT
-metadata:
-  tags: [skills, audit, governance, library, quality]
+name: builtin-skill-audit
+description: 技能库审计SOP：模型按 9 检查项检测全库技能出决策表，否定禁令转正向。触发：建改删技能、全库治理、审计决策表、技能库瘦身。
+version: 2.6.0
+cold_run: "v2.6.0 @ 2026-09-26 两轮零偏差（#9 并入配比判据，备份/部署两新场景各 12 行处置全对，红线/转写/定死/标待核实/补锐利均判死）"
 ---
 
 # 技能库审计（全模型检测）
@@ -13,7 +11,7 @@ metadata:
 
 **分工**：审计只管**现有全库**（按需触发的存量治理），不替代编写规范。新建/修改某技能必走 `skill-authoring-guide`（含冷跑）；审计的冷跑职责=**读各技能 frontmatter 的 `cold_run` 字段判定哪些冷跑过、哪些需补跑**，不重跑单技能冷跑。
 
-> 本技能自身改动后，**REQUIRED SUB-SKILL:** 先加载 `skill-authoring-guide`（技能编写规范与 TDD 流程），走 TDD + 冷跑验收（零上下文新会话调本技能一次，确认 9 项无理解偏差）才算收工。
+> 本技能自身改动后，**REQUIRED SUB-SKILL:** 先加载 `skill-authoring-guide`（社区共识技能编写规范与 TDD 流程），走 TDD + 冷跑验收（零上下文新窗口调本技能一次，确认 9 项无理解偏差）才算收工。
 
 ## 检查项（9 项，按依赖序过）
 
@@ -47,7 +45,7 @@ metadata:
 
 ## 流程（按序走；常规命中=修完该点继续往下，"停下拍板"仅两例外类，见命中动作节）
 
-**1. 扫描**：遍历技能目录（排除 `.archive/`），两层：`*/` 与 `*/*/`，各读 SKILL.md + references/；同过 `cold_run` 字段核对（按上方读逻辑，缺/对不上标"需补冷跑"，不代跑）。
+**1. 扫描**：遍历 `~/.hermes/skills/`（排除 `.archive/`），两层：`*/` 与 `*/*/`，各读 SKILL.md + references/；同过 `cold_run` 字段核对（按上方读逻辑，缺/对不上标"需补冷跑"，不代跑）。
 
 **2. 检测**：每技能过 1-9 → 命中软项读 references 复核 → 出决策表。
 
