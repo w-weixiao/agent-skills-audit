@@ -1,79 +1,79 @@
 ---
 name: skill-audit
-description: "Skill library audit SOP: run 9 checks on all skills, produce a decision table. Use when: auditing a skill library, governance, skill deduplication, skill slimming, dead-link detection, or after creating/editing/deleting skills. Negative triggers: writing a new skill (use skill-authoring-guide instead), single-skill cold-run (belong to authoring side)."
+description: "技能库审计SOP：模型按 9 检查项检测全库技能出决策表，否定禁令转正向。触发：建改删技能、全库治理、审计决策表、技能库瘦身、死链检测。负面触发：新建某技能（走 skill-authoring-guide）、单技能冷跑（归编写侧）。"
 version: 1.0.0
 license: MIT
 metadata:
   tags: [skills, audit, governance, library, quality]
 ---
 
-# Skill Library Audit (full-model detection)
+# 技能库审计（全模型检测）
 
-Entire audit = model reads files + model judges. No scripts, no snapshots, no decision history. Three body blocks: checks / flow / decision table.
+整条审计 = 模型读文件 + 模型判断。不用脚本、不存快照、不维护决策史。正文三块：检查项 / 流程 / 决策表。
 
-**Division of labor**: audit covers **existing library only** (on-demand governance of the stock). It does not replace the authoring guide. New/edit of any skill must go through `skill-authoring-guide` (including cold-run). Audit's cold-run role = **read each skill's frontmatter `cold_run` field to judge which have been cold-run and which need a run**, it does not re-run a single-skill cold-run.
+**分工**：审计只管**现有全库**（按需触发的存量治理），不替代编写规范。新建/修改某技能必走 `skill-authoring-guide`（含冷跑）；审计的冷跑职责=**读各技能 frontmatter 的 `cold_run` 字段判定哪些冷跑过、哪些需补跑**，不重跑单技能冷跑。
 
-> After any change to this skill itself, **REQUIRED SUB-SKILL:** load `skill-authoring-guide` first, run TDD + cold-run acceptance (zero-context new session invokes this skill once, confirm no misunderstanding in the 9 checks) before considering done.
+> 本技能自身改动后，**REQUIRED SUB-SKILL:** 先加载 `skill-authoring-guide`（技能编写规范与 TDD 流程），走 TDD + 冷跑验收（零上下文新会话调本技能一次，确认 9 项无理解偏差）才算收工。
 
-## Checks (9 items, in dependency order)
+## 检查项（9 项，按依赖序过）
 
-> **Boundary**: audit only does static checks that a full-library / cross-skill view cannot catch (overlap, dead links, facts, bloat, routing). **Cold-run acceptance is NOT here** — cold-run belongs to `skill-authoring-guide`, done "when editing a skill". Audit runs fast, batchable, does not duplicate cold-runs.
-> **Cold-run status (read, not run)**: scan each skill's frontmatter `cold_run` field. Format: `"v2.1.0 @ 2026-09-26 | sub-agent cold-run"` — extract the v number (drop the v prefix); == current `version` → that version is cold-run (skip); missing `cold_run` field, missing `version` field, or v number mismatch → not cold-run / stale, mark in report "**needs cold-run**" section (do not run it, hand off to `skill-authoring-guide` for TDD cold-run); do NOT put in "needs confirmation". This is the only place audit touches cold-run.
+> **边界**：审计只做全库/跨技能视角查不到的静态项（重叠、死链、事实、屎山、路由）。**冷跑验收不做在这里**——冷跑归 `skill-authoring-guide`，在"改某技能时"当场做。审计全库跑得快、可批量，不重复冷跑。
+> **冷跑状态核对（读，不跑）**：扫每个技能 frontmatter 的 `cold_run` 字段判断冷跑状态——`cold_run` 值形如 `"v2.1.0 @ 2026-09-26 | 子代理真冷跑"`，取其中的 v 号（去掉 v 前缀）== 当前 `version` = 该版已冷跑（跳过）；缺 `cold_run` 字段、缺 `version` 字段、或 v 号对不上 = 该版未冷跑/已失效，标进报告"**需补冷跑**"独立节（不代跑，交 `skill-authoring-guide` 走 TDD 冷跑），不归"待确认"两类。这是审计唯一和冷跑打交道的地方。
 
-**Dependency order** (editing one affects another; run in this order):
-#1 structure → #5 overlap → #6 facts → #8 goal-guard → #9 expression-direction → re-check #3/#4/#2/#7.
-Coupling: after deleting a skill, re-run #1 (dead links change); after #8/#9 rewrite, re-run #3.
+**依赖序**（改一处影响另一处，按此顺序跑）：
+#1 结构 → #5 重叠 → #6 事实 → #8 目标向导 → #9 表述方向 → 复检 #3/#4/#2/#7。
+耦合：删技能后重跑 #1（死链变）；#8/#9 转写后重跑 #3。
 
-**Priority**: Concise language is the **top priority** — trim to concise first, then judge remaining items; verbose/wordy/causal-explanation/jargon hits #2 volume, #3 style preferentially. Judgment anchors must be sharp (give "how to judge", not vague pointers like "params = recipe"). Troubleshooting uses linear diagnosis flow (check X first, then Y), not "symptom→conclusion" lookup table.
+**优先级**：语言简练是**第一优先级**——先砍到简练，再判其余项；冗长/啰嗦/带因果解释/黑话优先命中 #2 体量、#3 风格。判断锚点要锐利（能给"怎么判"，不写"参数=配方"这种模糊句），故障排查用线性定位流程（先看哪再看哪）不用"症状→结论"速查表。
 
-Criteria in two tiers: **hard** = machine-falsifiable (dead link, line count, date stamp); **soft** = model-judged structural quality.
+判据分两档：**硬** = 机器可证伪（死链、行数、日期戳）；**软** = 模型判断的结构质量。
 
-**Action on hit (auto-approve + exception only stops)**:
-- **Routine fixes, no confirmation needed**: hard hits (#1/#2/#6) → fix + re-run; soft routine hits (#3 style trim, #7 split, #9 rewrite, #4 add trigger words, #6 update stale facts) → fix directly, log in report.
-- **Stop and ask only for these two classes**: ① cannot auto-resolve (delete/merge skills, delete Cron, split sets, cross-skill reference changes); ② changes affecting overall functionality (change default recipe, change startup params, change a skill's core behavior / goal).
-- Unclear whether a hit is "routine" or "affects overall" → put in "needs confirmation" section of report, do not change.
+**命中动作（自动放行 + 例外才问）**：
+- **常规处理直接做，不用你确认**：硬项命中（#1/#2/#6）→ 直接修+重跑；软项的常规命中（#3 风格砍冗余、#7 拆文件、#9 转写、#4 补触发词、#6 更新过期事实）→ 直接改，进报告即可。
+- **仅这两类才停下来等你拍板**：① 无法自动解决（删/合并技能、删 Cron、成套线拆分、跨技能引用改动）；② 对功能整体有影响的改动（改默认配方、改启动参数、改某技能的核心行为/目标）。
+- 拿不准某条算"常规"还是"影响整体"→ 归入"需确认"，写进报告的"待确认"区，不擅改。
 
-| # | Check | Criterion | Tier |
+| # | 检查项 | 判据 | 档 |
 |---|---|---|---|
-| 1 structure | frontmatter valid, name=dir name, related/references no dead links | YAML parse failure / dead link → fix | hard |
-| 2 volume | description ≤200 chars, body <500 lines | over limit → split to references/ | hard |
-| 3 style | no narrative, no date stamps, no redundancy | "in round X we found" / synonym repeats → trim | soft |
-| 4 routing | description trigger-style not flow-style, trigger words not too broad | reword doesn't trigger → add keywords | soft |
-| 5 overlap | pairwise function compare vs whole library | compare core functions (verb+object) of two skills' description+title: >70% overlap → merge; same tool different scenarios → split | soft |
-| 6 facts | hard-coded paths/scripts/ports/APIs vs current disk & processes | tool renamed / API changed → update or delete | hard |
-| 7 structure | main file only index+flow+criteria, heavy ref / big code already split | inline big code / should-split-not → split | soft |
-| 8 goal-guard | content serves declared goal (goal = description first sentence + title) | unrelated function → delete | soft |
-| 9 expression-direction | negation→positive (red-line sentences exempt); per-item "ratio criterion": delete → active action inferable? can't infer + has value = fixed; can't infer + no value = should-fix-not (value-pick: fix or mark needs-verify) / anchor-too-vague (pointer: sharpen cite value) (disposition in references #9); adult skills skip entire item | see references #9 | soft |
+| 1 结构 | frontmatter 合法、name=目录名、related/references 无死链 | YAML 解析失败/死链 → 修 | 硬 |
+| 2 体量 | description ≤200 字、正文 <500 行 | 超限拆 references/ | 硬 |
+| 3 风格 | 无叙事、无日期戳、无冗余 | "某轮我们发现"/同义重复 → 砍 | 软 |
+| 4 路由 | description 触发式非流程式、触发词不泛 | 换说法触发不到 → 补关键词 | 软 |
+| 5 重叠 | 与全库两两比功能 | 拿两技能 description+标题声明的功能清单比：核心功能（动词+对象）重合 >70% 合并；同工具不同场景分工 | 软 |
+| 6 事实 | 写死的路径/脚本/端口/接口对当前磁盘与进程 | 工具改名/接口变更 → 更新或删 | 硬 |
+| 7 结构 | 主文件只放索引+流程+判据、重参考/大代码已拆 | 内联大代码/该拆没拆 → 拆 | 软 |
+| 8 目标向导 | 内容服务声明目标（目标=description 首句+标题） | 无关功能 → 删 | 软 |
+| 9 表述方向 | 否定禁令转正向（红线句除外）；逐条加"配比判据"：删掉→主动作推得对？推不出+已带值=已定死；推不出+不带值=该定没定（选值句：定死或标待核实）/锚点太糊（转指句：补锐利引值）（处置见 references #9）；成人技能整项跳过 | 见 references #9 | 软 |
 
-## Flow (walk in order; routine hit = fix that point, continue; "stop and ask" only for the two exception classes, see action-on-hit section)
+## 流程（按序走；常规命中=修完该点继续往下，"停下拍板"仅两例外类，见命中动作节）
 
-**1. Scan**: traverse the skills directory (exclude `.archive/`), two levels: `*/` and `*/*/`, read each SKILL.md + references/; same pass: check `cold_run` field (per read logic above, missing/mismatch → mark "needs cold-run", do not run).
+**1. 扫描**：遍历技能目录（排除 `.archive/`），两层：`*/` 与 `*/*/`，各读 SKILL.md + references/；同过 `cold_run` 字段核对（按上方读逻辑，缺/对不上标"需补冷跑"，不代跑）。
 
-**2. Detect**: each skill passes 1–9 → soft hits read references to re-verify → produce decision table.
+**2. 检测**：每技能过 1-9 → 命中软项读 references 复核 → 出决策表。
 
-**3. Decision table**: follow the template below; routine hits are fixed and logged in report; only "needs confirmation" class (cannot auto-resolve / affects overall function) stops for user sign-off.
+**3. 决策表**：按下方模板，常规命中直接改并记录到报告；仅"需确认"类（无法自动解决/影响功能整体）停下来交用户拍板。
 
-**4. Execute** (each "delete/merge" skill follows this judgment chain):
+**4. 执行**（每个"删/合并"的技能走此判断链）：
 ```
-references/ referenced by surviving side? → copy in before deleting
-Cron-bound? → warn scheduled task will be invalidated
-Set member? → keep whole set, don't delete individually
-Move to .archive/<batch>/ (can mv back) → re-check dead links across whole library after deletion
+references/ 被保留方引用？ → 先拷入再删
+Cron 绑定？ → 预警定时任务失效
+成套线成员？ → 整体保留不单独删
+移入 .archive/<批次>/（可 mv 回）→ 删后全库复查死链
 ```
 
-## Decision Table Template (with exclusion method)
+## 决策表模板（含排除法）
 
-| Skill | Verdict | Rationale (hit items) | Exclusion (why not another verdict) | Disposition |
+| 技能 | 判定 | 依据（命中项） | 排除项（为何不是另一判定） | 处置 |
 |---|---|---|---|---|
-| `x` | keep / merge / delete / tighten | 5-overlap: >70% overlap with `y` | not keep: >70% keeping = redundant | merge into `y`, archive `x` |
+| `x` | 保留/合并/删/收紧 | 5-重叠：与 `y` 重合 >70% | 不保留：>70% 保留即冗余 | 并入 `y`，归档 `x` |
 
-Exclusion method: judging "delete" write why not keep / not merge; judging "merge" write where to merge and why not delete; judging "keep" write hit items + fixable.
+排除法：判删写清为何不保留/不合并；判合并写清并入哪、为何不删；判保留写清命中项+可修。
 
-## Hard Caps (anti-bloat)
-- Main file ≤80 lines (check #2's <500 lines is a library-wide floor; 80 lines is the daily standard for the main file); main file = index + flow + criteria; heavy refs split to references/; inline big code = rejected.
-- No "active skill list" snapshot (computed live; snapshots always go stale).
-- This skill exceeding its own caps = self-violation of the standard; slim itself before auditing others.
+## 硬上限（防屎山）
+- 主文件 ≤80 行（判据#2 的 <500 行是全库兜底上限，80 行是主文件日常标准）；主文件=索引+流程+判据，重参考拆 references/；内联大代码=打回。
+- 不写"活动技能清单"快照（现算，快照必过期）。
+- 本技能超限=自身违反标准，先瘦身再审计别人。
 
-## Audit Report (output this summary after running, no process narrative)
+## 审计报告（运行完输出此概述，不展开过程）
 
-Format + section conventions (optimized items / needs cold-run / needs confirmation — three sections) see `references/report-format.md`.
+格式 + 落区约定（优化条目 / 需补冷跑 / 待确认 三节）见 `references/report-format.md`。
